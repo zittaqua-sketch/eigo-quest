@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>えいごクエスト</title>
+<style>
+  :root{
+    --ink:#1b1b1b; --paper:#f6f0dc; --panel:#3b2a1a; --panel2:#5a4128;
+    --grass:#4caf3a; --grass-d:#2f7d23; --dirt:#8a5a2b; --sky:#4aa3f0;
+    --gold:#ffcf3a; --red:#e2403a; --blue:#2f6fd6; --ok:#36c24a; --ng:#e2403a;
+    --px:4px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#111;color:var(--ink);
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+    -webkit-user-select:none;user-select:none;touch-action:manipulation;}
+  button{font:inherit;color:inherit;border:none;background:none;cursor:pointer;}
+  ruby rt{font-size:.5em;}
+
+  .screen{position:fixed;inset:0;display:none;}
+  .screen.active{display:flex;}
+
+  /* ドット絵ふうの枠 */
+  .px-box{background:var(--paper);border:var(--px) solid var(--ink);
+    box-shadow:inset calc(var(--px)*-1) calc(var(--px)*-1) 0 rgba(0,0,0,.18), inset var(--px) var(--px) 0 rgba(255,255,255,.7);}
+  .px-btn{display:inline-flex;align-items:center;justify-content:center;gap:.4em;
+    background:var(--grass);color:#fff;font-weight:900;letter-spacing:.05em;
+    border:var(--px) solid var(--ink);text-shadow:2px 2px 0 rgba(0,0,0,.45);
+    box-shadow:inset -6px -6px 0 var(--grass-d), inset 6px 6px 0 rgba(255,255,255,.35);
+    padding:.55em 1.2em;min-height:56px;transition:transform .05s;}
+  .px-btn:active{transform:translateY(3px);box-shadow:inset -3px -3px 0 var(--grass-d), inset 3px 3px 0 rgba(255,255,255,.35);}
+  .px-btn.gray{background:#8d8d8d;box-shadow:inset -6px -6px 0 #5e5e5e, inset 6px 6px 0 rgba(255,255,255,.35);}
+  .px-btn.blue{background:var(--blue);box-shadow:inset -6px -6px 0 #1d4a96, inset 6px 6px 0 rgba(255,255,255,.35);}
+  .px-btn:disabled{filter:grayscale(1) brightness(.85);}
+
+  /* ===== ホーム ===== */
+  #home{flex-direction:column;align-items:center;justify-content:center;gap:2.2vh;
+    background:var(--sky) url("assets/title-bg.webp") center/cover no-repeat;}
+  #home .title{font-size:min(10vw,13vh);font-weight:900;color:#fff;letter-spacing:.06em;
+    text-shadow:6px 6px 0 var(--ink), -3px -3px 0 var(--ink), 3px -3px 0 var(--ink), -3px 3px 0 var(--ink);}
+  #home .sub{font-size:min(2.6vw,3.6vh);font-weight:900;color:#fff;background:rgba(0,0,0,.55);padding:.2em .8em;border:3px solid var(--ink);}
+  .home-status{display:flex;gap:1.5vw;}
+  .home-status .px-box{white-space:nowrap;padding:.5em 1.1em;font-weight:900;font-size:min(2.4vw,3.4vh);display:flex;align-items:center;gap:.5em;}
+  .coin{display:inline-block;width:1.1em;height:1.1em;background:var(--gold);border:3px solid #a0730d;
+    box-shadow:inset -3px -3px 0 #d79f12, inset 3px 3px 0 #fff3a8;vertical-align:middle;}
+  #btn-battle{font-size:min(4vw,5.6vh);padding:.4em 2.2em;}
+  .home-menu{display:flex;gap:1.2vw;}
+  .home-menu .px-btn{font-size:min(2.2vw,3vh);min-width:8.5em;flex-direction:column;gap:0;white-space:nowrap;line-height:1.2;}
+  .home-menu small{font-size:.6em;opacity:.9;}
+  .corner{position:absolute;top:2vh;right:2vw;display:flex;gap:.8vw;}
+  .corner-btn{font-size:min(2vw,2.8vh);min-height:48px;padding:.3em .8em;white-space:nowrap;}
+  .px-btn.off{background:#5e5e5e;box-shadow:inset -6px -6px 0 #3e3e3e, inset 6px 6px 0 rgba(255,255,255,.2);color:#cfcfcf;}
+  .weapon-chip{width:1.8em;height:1.8em;object-fit:contain;image-rendering:pixelated;}
+  .home-menu .px-btn.blue{min-width:8.5em;}
+
+  /* ===== そうび・ガチャ 共通 ===== */
+  .sub-screen{flex-direction:column;background:#2a1d12;padding:1.2vh 1.2vw;gap:1.2vh;}
+  .subbar{display:flex;align-items:center;gap:1vw;height:8.5vh;min-height:52px;}
+  .subbar .px-btn{height:100%;min-height:0;padding:0 1.1em;font-size:min(2vw,3vh);white-space:nowrap;}
+  .subbar .spacer{flex:1;}
+  .subtitle{color:#fff;font-weight:900;font-size:min(3vw,4.4vh);text-shadow:3px 3px 0 var(--ink);}
+  .coinbox{height:100%;display:flex;align-items:center;gap:.5em;padding:0 1.1em;font-weight:900;font-size:min(2.4vw,3.4vh);white-space:nowrap;}
+  .tabs{display:flex;height:100%;}
+  .tab{height:100%;padding:0 1.4em;font-weight:900;font-size:min(2vw,3vh);background:#6b5a44;color:#e9dcc0;border:var(--px) solid var(--ink);margin-right:-4px;white-space:nowrap;}
+  .tab.on{background:var(--paper);color:var(--ink);}
+  .tab small{font-size:.6em;}
+  .tab:disabled{opacity:.6;}
+  .stars{color:#f2a900;letter-spacing:.05em;text-shadow:1px 1px 0 #6b4a00;white-space:nowrap;}
+  .r0{--rc:#9d8a6c;} .r1{--rc:#9d9d9d;} .r2{--rc:#4caf3a;} .r3{--rc:#2f6fd6;} .r4{--rc:#a54fd6;} .r5{--rc:#f2a900;}
+
+  /* そうび */
+  .equip-main{flex:1;display:flex;gap:1.2vw;min-height:0;}
+  .wgrid{flex:1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:1vh .8vw;min-height:0;}
+  .wcard{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2vh;
+    background:var(--paper);border:var(--px) solid var(--ink);box-shadow:inset 0 -.8vh 0 var(--rc);padding:.6vh .3vw 1.2vh;min-height:0;overflow:hidden;}
+  .wcard img{flex:1;min-height:0;width:100%;object-fit:contain;image-rendering:pixelated;}
+  .wcard .wn{font-weight:900;font-size:min(1.45vw,2.1vh);white-space:nowrap;}
+  .wcard .stars{font-size:min(1.3vw,1.9vh);}
+  .wcard .lv{position:absolute;top:.3vh;left:.3vw;background:var(--ink);color:#fff;font-weight:900;font-size:min(1.2vw,1.7vh);padding:0 .35em;}
+  .wcard.locked{background:#6b5a44;box-shadow:none;}
+  .wcard.locked img{filter:brightness(0);opacity:.45;}
+  .wcard.locked .wn{color:#d9cbb0;}
+  .wcard.equipped{outline:6px solid var(--gold);outline-offset:-10px;background:#fff6c8;}
+  .wcard.equipped::after{content:"そうびちゅう";position:absolute;top:.3vh;right:.3vw;background:#d9531e;color:#fff;font-weight:900;font-size:min(1.1vw,1.6vh);padding:0 .35em;}
+  .wcard.sel{transform:translateY(-3px);}
+  .imgfb{flex:1;width:100%;display:flex;align-items:center;justify-content:center;background:var(--rc);color:#fff;font-weight:900;font-size:min(1.4vw,2vh);text-align:center;}
+
+  .wdetail{flex:0 0 34%;display:flex;flex-direction:column;align-items:center;gap:1.2vh;padding:2vh 1.4vw;min-height:0;text-align:center;}
+  .wdetail .big{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#fff 0,#fff 35%,var(--rc) 100%);border:var(--px) solid var(--ink);}
+  .wdetail .big img{max-width:90%;max-height:90%;object-fit:contain;image-rendering:pixelated;}
+  .wdetail .big{position:relative;overflow:hidden;}
+  /* レベルアップ：fx-levelup.png（横6コマ）を武器の上で再生 */
+  .fx{position:absolute;left:50%;top:50%;height:110%;aspect-ratio:1;transform:translate(-50%,-50%);overflow:hidden;pointer-events:none;}
+  .fx i{position:absolute;left:0;top:0;height:100%;width:600%;background:url("assets/fx-levelup.png") left center/100% 100% no-repeat;
+    animation:fx6 .6s steps(6) forwards;}
+  @keyframes fx6{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+  .lvup{position:absolute;left:0;right:0;top:6%;text-align:center;font-weight:900;font-size:min(3vw,4.4vh);color:#ffdf4a;
+    text-shadow:3px 3px 0 var(--ink),-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink);animation:lvup 1.2s ease-out forwards;pointer-events:none;}
+  @keyframes lvup{0%{opacity:0;transform:translateY(30%) scale(.6)}20%{opacity:1;transform:translateY(0) scale(1.15)}35%{transform:scale(1)}85%{opacity:1}100%{opacity:0}}
+  .wdetail .big.pulse img{animation:wpulse .6s ease-out;}
+  @keyframes wpulse{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+  .wdetail .locked-big img{filter:brightness(0);opacity:.45;}
+  .wdetail h3{font-size:min(2.8vw,4vh);font-weight:900;}
+  .wdetail .stars{font-size:min(2.2vw,3.2vh);}
+  .wdetail .stat{font-weight:900;font-size:min(1.9vw,2.7vh);line-height:1.5;white-space:nowrap;}
+  .wdetail .stat b{font-size:1.3em;color:#d9531e;}
+  .wdetail .px-btn{width:100%;font-size:min(2.1vw,3vh);min-height:64px;flex-direction:column;gap:0;line-height:1.25;white-space:nowrap;}
+  .wdetail .px-btn small{font-size:.75em;display:inline-flex;align-items:center;gap:.3em;}
+  .wdetail .msg{font-weight:900;font-size:min(1.7vw,2.5vh);color:#6b5a44;min-height:1.4em;}
+
+  /* ガチャ */
+  .gacha-main{flex:1;display:flex;gap:1.2vw;min-height:0;}
+  .gacha-stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    background:radial-gradient(circle at 50% 55%,#fff6c8 0,#ffd86a 30%,#b97a1d 100%);}
+  /* 宝箱（CSSで描くドット風。金のふち・宝石・光） */
+  .chest-wrap{position:relative;width:min(30vw,42vh);aspect-ratio:1.1;display:flex;align-items:flex-end;justify-content:center;}
+  .chest-wrap.hide{display:none;}
+  .halo{position:absolute;left:-25%;top:-34.5%;width:150%;aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.95) 0,rgba(255,236,140,.75) 22%,rgba(255,200,60,0) 62%);animation:halo 2.4s ease-in-out infinite;}
+  .chest-wrap.r3 .halo,.chest-wrap.r4 .halo,.chest-wrap.r5 .halo{background:radial-gradient(circle,#fff 0,var(--rc) 28%,rgba(0,0,0,0) 64%);}
+  .chest-wrap.r5 .halo{background:conic-gradient(from 0deg,#ff5a5a,#ffd23a,#5ee36a,#4ab3ff,#b56bff,#ff5a5a);
+    -webkit-mask:radial-gradient(circle,#000 0,#000 25%,transparent 62%);mask:radial-gradient(circle,#000 0,#000 25%,transparent 62%);animation:halo 2.4s ease-in-out infinite, spinh 2s linear infinite;}
+  @keyframes halo{0%,100%{opacity:.75;transform:scale(.92)}50%{opacity:1;transform:scale(1.06)}}
+  @keyframes spinh{to{rotate:360deg}}
+  .pedestal{position:absolute;left:4%;right:4%;bottom:0;height:13%;background:#8d8d8d;border:6px solid var(--ink);
+    box-shadow:inset 0 -8px 0 #5e5e5e, inset 0 8px 0 #c4c4c4;}
+  .pedestal::before{content:"";position:absolute;left:8%;right:8%;top:-38%;height:38%;background:#a9a9a9;border:6px solid var(--ink);border-bottom:none;box-shadow:inset 0 6px 0 #d6d6d6;}
+  .chest{position:relative;width:78%;aspect-ratio:1.22;margin-bottom:17%;z-index:1;filter:drop-shadow(0 8px 0 rgba(0,0,0,.35));}
+  .chest-lid{position:absolute;left:0;right:0;top:0;height:42%;z-index:2;border:6px solid var(--ink);border-radius:46% 46% 0 0 / 70% 70% 0 0;
+    background:
+      linear-gradient(90deg,transparent 15%,#f2c230 15%,#f2c230 23%,transparent 23%,transparent 77%,#f2c230 77%,#f2c230 85%,transparent 85%),
+      linear-gradient(#c97a2c,#a35a1c 55%,#86461a);
+    box-shadow:inset 0 -10px 0 #e2a72a, inset 0 -16px 0 #7a3f10, inset 0 8px 0 rgba(255,255,255,.25);
+    transform-origin:50% 100%;transition:transform .35s cubic-bezier(.3,1.6,.6,1);}
+  .chest-body{position:absolute;left:0;right:0;bottom:0;height:61%;border:6px solid var(--ink);
+    background:
+      radial-gradient(circle at 9% 18%,#fff3a8 0 3%,#e2a72a 3% 6%,transparent 6.5%),
+      radial-gradient(circle at 91% 18%,#fff3a8 0 3%,#e2a72a 3% 6%,transparent 6.5%),
+      radial-gradient(circle at 9% 82%,#fff3a8 0 3%,#e2a72a 3% 6%,transparent 6.5%),
+      radial-gradient(circle at 91% 82%,#fff3a8 0 3%,#e2a72a 3% 6%,transparent 6.5%),
+      linear-gradient(90deg,transparent 15%,#f2c230 15%,#f2c230 23%,transparent 23%,transparent 77%,#f2c230 77%,#f2c230 85%,transparent 85%),
+      repeating-linear-gradient(#9a5420 0 22%,#7e4216 22% 25%);
+    box-shadow:inset 0 10px 0 #e2a72a, inset 0 -10px 0 #e2a72a, inset 10px 0 0 #e2a72a, inset -10px 0 0 #e2a72a, inset 0 16px 0 #6a3410;}
+  .chest-lock{position:absolute;left:50%;top:-14%;width:22%;height:46%;transform:translateX(-50%);z-index:3;
+    background:linear-gradient(#ffe680,#f2c230 45%,#c98f12);border:5px solid var(--ink);border-radius:18% 18% 40% 40%;
+    box-shadow:inset 0 -5px 0 #a8730a, inset 0 4px 0 #fff3b0;}
+  .chest-lock::before{content:"";position:absolute;left:50%;top:28%;width:46%;aspect-ratio:1;transform:translateX(-50%) rotate(45deg);
+    background:radial-gradient(circle at 35% 35%,#fff 0 12%,#ff6a8a 13% 35%,#d4143c 36% 70%,#8a0a24 71%);border:4px solid var(--ink);animation:gem 1.6s ease-in-out infinite;}
+  @keyframes gem{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45)}}
+  .beam{position:absolute;left:10%;right:10%;bottom:45%;height:0;z-index:1;opacity:0;
+    background:linear-gradient(to top,#fff 0,var(--rc,#ffd86a) 35%,rgba(255,255,255,0));clip-path:polygon(18% 100%,82% 100%,100% 0,0 0);}
+  .chest.open .beam{animation:beam .5s ease-out forwards;}
+  @keyframes beam{from{height:0;opacity:0}to{height:180%;opacity:1}}
+  .sparks{position:absolute;inset:0;z-index:2;pointer-events:none;}
+  .spark{position:absolute;width:7%;aspect-ratio:1;z-index:2;background:#fff;
+    clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);animation:twinkle 1.8s ease-in-out infinite;}
+  .spark:nth-child(1){left:6%;top:14%;animation-delay:0s}
+  .spark:nth-child(2){left:84%;top:8%;animation-delay:.5s;width:9%}
+  .spark:nth-child(3){left:92%;top:52%;animation-delay:1s;width:5%}
+  .spark:nth-child(4){left:0%;top:56%;animation-delay:1.3s;width:6%}
+  .spark:nth-child(5){left:46%;top:0%;animation-delay:.8s;width:5%}
+  @keyframes twinkle{0%,100%{transform:scale(.2) rotate(0);opacity:0}50%{transform:scale(1) rotate(45deg);opacity:1}}
+  .chest.shake{animation:cshake .12s 7;}
+  .chest.open .chest-lid{transform:translateY(-34%) rotate(-24deg);}
+  @keyframes cshake{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-5deg) translateY(-4px)}75%{transform:rotate(5deg) translateY(-4px)}}
+  .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:5;}
+  .flash.go{animation:flashw .5s ease-out;}
+  @keyframes flashw{0%{opacity:0}25%{opacity:.95}100%{opacity:0}}
+  @keyframes cshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+  .gacha-result{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1vh;}
+  .gacha-result.show{display:flex;animation:rise .45s ease-out;}
+  .gacha-result::before{content:"";position:absolute;inset:-50%;background:repeating-conic-gradient(var(--rc) 0 12deg,transparent 12deg 24deg);opacity:.35;animation:spin 8s linear infinite;z-index:0;}
+  .gacha-result > *{position:relative;z-index:1;}
+  .gacha-result img{width:min(26vw,36vh);height:min(26vw,36vh);object-fit:contain;image-rendering:pixelated;filter:drop-shadow(6px 6px 0 rgba(0,0,0,.35));}
+  .gacha-result .imgfb{flex:none;width:min(26vw,36vh);height:min(26vw,36vh);}
+  .gacha-result .tag{font-weight:900;font-size:min(2.4vw,3.4vh);background:#d9531e;color:#fff;padding:.1em .8em;border:4px solid var(--ink);}
+  .gacha-result .tag.dup{background:#6b5a44;}
+  .gacha-result h3{font-weight:900;font-size:min(3.8vw,5.4vh);color:#fff;text-shadow:4px 4px 0 var(--ink),-2px -2px 0 var(--ink);}
+  .gacha-result .stars{font-size:min(3vw,4.2vh);}
+  .gacha-result .sub{font-weight:900;font-size:min(2vw,2.9vh);background:rgba(255,255,255,.85);padding:.2em .8em;border:3px solid var(--ink);}
+  @keyframes rise{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #btn-ticket{font-size:min(2.2vw,3.2vh);flex-direction:column;gap:.1em;white-space:nowrap;line-height:1.3;}
+  #btn-ticket small{font-size:.7em;display:inline-flex;align-items:center;}
+  .ticket-ico{display:inline-block;width:1.4em;height:.9em;background:#ff7aa8;border:3px solid var(--ink);vertical-align:middle;
+    box-shadow:inset 0 0 0 2px #ffd0e0;margin-right:.3em;}
+  .gacha-side{flex:0 0 30%;display:flex;flex-direction:column;gap:1.6vh;padding:2vh 1.4vw;}
+  #btn-pull{font-size:min(3vw,4.4vh);line-height:1.3;padding:.5em .6em;}
+  #btn-pull{flex-direction:column;gap:.2em;white-space:nowrap;}
+  #btn-pull small{font-size:.55em;display:inline-flex;align-items:center;gap:.3em;}
+  .rates{display:flex;flex-direction:column;gap:.6vh;font-weight:900;font-size:min(1.8vw,2.6vh);}
+  .rates div{display:flex;justify-content:space-between;border-bottom:3px dotted #c9b88f;padding-bottom:.3vh;}
+  .note{font-weight:700;font-size:min(1.6vw,2.3vh);color:#6b5a44;text-align:center;}
+
+  /* ===== バトル ===== */
+  #battle{background:#2a1d12;padding:1.2vh 1.2vw;gap:1.2vw;flex-direction:column;}
+  .topbar{display:flex;align-items:center;gap:1vw;height:8.5vh;min-height:48px;}
+  .topbar .px-box{height:100%;white-space:nowrap;display:flex;align-items:center;padding:0 .8em;font-weight:900;font-size:min(1.9vw,2.8vh);}
+  .combo{color:#fff;background:#d9531e !important;text-shadow:2px 2px 0 rgba(0,0,0,.4);}
+  .combo b{font-size:1.25em;margin-left:.3em;}
+  .dice{gap:.5em;color:#6b5a44;}
+  .dice.on{color:var(--ink);}
+  /* サイコロ（CSSで描く 3×3 の目） */
+  .die{--s:1.7em;width:var(--s);height:var(--s);background:#fff;border:3px solid var(--ink);border-radius:18%;
+    display:grid;grid-template:repeat(3,minmax(0,1fr))/repeat(3,minmax(0,1fr));padding:calc(var(--s) * .08);box-sizing:border-box;box-shadow:inset -3px -3px 0 #d6cfbf;flex:none;}
+  .die i{width:calc(var(--s) * .15);height:calc(var(--s) * .15);margin:auto;border-radius:50%;background:var(--ink);visibility:hidden;}
+  .die.v1 i:nth-child(5),
+  .die.v2 i:nth-child(1),.die.v2 i:nth-child(9),
+  .die.v3 i:nth-child(1),.die.v3 i:nth-child(5),.die.v3 i:nth-child(9),
+  .die.v4 i:nth-child(1),.die.v4 i:nth-child(3),.die.v4 i:nth-child(7),.die.v4 i:nth-child(9),
+  .die.v5 i:nth-child(1),.die.v5 i:nth-child(3),.die.v5 i:nth-child(5),.die.v5 i:nth-child(7),.die.v5 i:nth-child(9),
+  .die.v6 i:nth-child(1),.die.v6 i:nth-child(3),.die.v6 i:nth-child(4),.die.v6 i:nth-child(6),.die.v6 i:nth-child(7),.die.v6 i:nth-child(9){visibility:visible;}
+  .die.v1 i{background:#d4143c;width:calc(var(--s) * .2);height:calc(var(--s) * .2);}
+  .die.v6{background:#fff3a8;}
+  .die.blank{background:#efe6d0;border-style:dashed;border-color:#8a7a62;box-shadow:none;}
+  /* バトル開始の ダイスロール（アリーナの上） */
+  .dice-roll{position:absolute;inset:0;z-index:6;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2vh;
+    background:rgba(0,0,0,.55);}
+  .dice-roll.show{display:flex;}
+  .dice-roll .die{--s:min(13vw,19vh);border-width:6px;box-shadow:inset -8px -8px 0 #d6cfbf, 6px 6px 0 rgba(0,0,0,.4);}
+  .dice-roll .die.rolling{animation:droll .18s linear infinite;}
+  .dice-roll .die.land{animation:dland .4s cubic-bezier(.3,1.8,.5,1);}
+  @keyframes droll{0%{transform:rotate(0) translateY(0)}25%{transform:rotate(90deg) translateY(-14%)}50%{transform:rotate(180deg) translateY(0)}75%{transform:rotate(270deg) translateY(-8%)}100%{transform:rotate(360deg) translateY(0)}}
+  @keyframes dland{0%{transform:scale(1.5)}100%{transform:scale(1)}}
+  .dice-roll .dtitle{color:#fff;font-weight:900;font-size:min(2.6vw,3.8vh);text-shadow:3px 3px 0 var(--ink);}
+  .dice-roll .dres{min-height:2.6em;text-align:center;color:#ffdf4a;font-weight:900;font-size:min(2.6vw,3.8vh);line-height:1.3;
+    text-shadow:3px 3px 0 var(--ink),-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink);padding:0 1em;}
+  .dice-roll .dres small{display:block;font-size:.6em;color:#fff;}
+  .dice-roll.jackpot{background:radial-gradient(circle,rgba(255,223,74,.55),rgba(0,0,0,.6) 70%);}
+  /* いま効いている ボーナス */
+  .bonuses{display:flex;flex-wrap:wrap;gap:.4vw;}
+  .bchip{font-weight:900;font-size:min(1.45vw,2.1vh);color:var(--ink);background:#ffdf4a;border:3px solid var(--ink);padding:0 .45em;white-space:nowrap;
+    box-shadow:inset 0 -3px 0 #d9a400;}
+  .bchip.off{background:#c9c2b0;box-shadow:none;color:#5e5646;text-decoration:line-through;}
+  .topbar .spacer{flex:1;}
+  .topbar .px-btn{height:100%;white-space:nowrap;min-height:0;padding:0 .8em;font-size:min(1.8vw,2.7vh);}
+  .battle-main{flex:1;display:flex;gap:1.2vw;min-height:0;}
+
+  .arena{flex:0 0 46%;position:relative;border:var(--px) solid var(--ink);overflow:hidden;background:#5bb0ff;}
+  .arena img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%;image-rendering:pixelated;}
+  .fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    font-weight:900;font-size:min(3.6vw,5vh);color:#fff;text-shadow:3px 3px 0 var(--ink);}
+  .arena.noimg .fallback{display:flex;}
+  .arena.noimg img.bg{display:none;}
+  .arena .hud{position:absolute;left:0;right:0;top:0;padding:1.2vh 1vw;display:flex;flex-direction:column;gap:.8vh;
+    background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,0));}
+  .mname{color:#fff;font-weight:900;font-size:min(2.6vw,3.6vh);text-shadow:3px 3px 0 var(--ink);}
+  .hpbar{height:2.6vh;min-height:16px;background:#3a3a3a;border:3px solid var(--ink);position:relative;}
+  .hpbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--red);transition:width .35s steps(6);
+    box-shadow:inset 0 -5px 0 rgba(0,0,0,.25), inset 0 4px 0 rgba(255,255,255,.35);}
+  .hpbar .num{position:absolute;right:.4em;top:50%;transform:translateY(-50%);color:#fff;font-weight:900;font-size:min(1.6vw,2.2vh);text-shadow:2px 2px 0 #000;}
+  .hearts{position:absolute;left:0;right:0;bottom:0;padding:1vh 1vw;display:flex;gap:.6vw;align-items:center;
+    background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.6));}
+  .hearts .label{color:#fff;font-weight:900;font-size:min(1.8vw,2.6vh);text-shadow:2px 2px 0 #000;margin-right:.4em;}
+  .heart{width:min(3.6vw,5vh);height:min(3.6vw,5vh);}
+  .heart.lost{filter:grayscale(1) brightness(.5);opacity:.7;}
+  .heart.pop{animation:pop .5s;}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.5)}100%{transform:scale(1)}}
+
+  .arena.hit img.bg{animation:shake .4s;}
+  /* ボス：背景の上に本体を重ね、ふわふわ上下＋2コマ交互 */
+  .boss{position:absolute;left:8%;right:8%;bottom:3%;top:14%;display:none;animation:bob 2.2s ease-in-out infinite;}
+  .arena.is-boss .boss{display:block;}
+  .arena.is-boss.noimg .boss{display:none;}
+  .boss img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;image-rendering:pixelated;
+    filter:drop-shadow(0 10px 6px rgba(0,0,0,.45));}
+  .boss #boss-f2{visibility:hidden;}
+  .boss.f2 #boss-f1{visibility:hidden;}
+  .boss.f2 #boss-f2{visibility:visible;}
+  @keyframes bob{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-3%) scaleY(1.02)}}
+  .arena.is-boss.hit img.bg{animation:none;}
+  .boss.red img{filter:sepia(1) saturate(6) hue-rotate(-50deg);}
+  .boss-in{position:absolute;left:0;right:0;top:40%;text-align:center;font-weight:900;font-size:min(4.4vw,6.4vh);color:#ffdf4a;
+    text-shadow:4px 4px 0 var(--ink),-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink);opacity:0;pointer-events:none;z-index:3;}
+  .boss-in.go{animation:bossin 1.6s ease-out forwards;}
+  @keyframes bossin{0%{opacity:0;transform:scale(2)}15%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+  .arena.is-boss .hud .mname::before{content:"BOSS ";color:#ff5a3a;}
+  .arena.hurt::after{content:"";position:absolute;inset:0;background:rgba(226,64,58,.45);animation:flash .45s forwards;}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-14px)}40%{transform:translateX(12px)}60%{transform:translateX(-8px)}80%{transform:translateX(5px)}}
+  @keyframes flash{from{opacity:1}to{opacity:0}}
+  .slash{position:absolute;left:50%;top:50%;width:60%;aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none;display:none;}
+  .slash.go{display:block;animation:slash .45s ease-out forwards;}
+  .slash img{width:100%;height:100%;object-fit:contain;}
+  .slash .stick-big{position:absolute;left:45%;top:5%;width:10%;height:90%;background:#9a6a35;border:6px solid #4b2f12;
+    box-shadow:inset -8px 0 0 #6f4920;}
+  @keyframes slash{0%{transform:translate(-90%,-80%) rotate(-70deg);opacity:0}30%{opacity:1}100%{transform:translate(-20%,-30%) rotate(40deg);opacity:0}}
+  .dmg{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-weight:900;font-size:min(6vw,9vh);color:#fff;
+    text-shadow:4px 4px 0 var(--ink), -2px -2px 0 var(--ink);pointer-events:none;opacity:0;}
+  .dmg.go{animation:dmg .8s forwards;}
+  @keyframes dmg{0%{opacity:0;transform:translate(-50%,-20%)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-140%)}}
+
+  .qpanel{flex:1;display:flex;flex-direction:column;padding:2vh 1.6vw;gap:1.6vh;min-width:0;}
+  .qmeta{display:flex;justify-content:space-between;align-items:center;font-weight:900;font-size:min(1.7vw,2.4vh);color:#6b5a44;}
+  .qtype{background:var(--panel2);color:#fff;padding:.15em .7em;border:3px solid var(--ink);}
+  .sentence{font-family:"Arial Rounded MT Bold","Helvetica Neue",Arial,sans-serif;font-weight:700;
+    font-size:min(3.6vw,5.4vh);line-height:1.3;text-align:center;flex:1;display:flex;align-items:center;justify-content:center;word-break:break-word;}
+  .sentence .blank{display:inline-block;min-width:3.2em;border-bottom:5px solid var(--ink);margin:0 .15em;color:var(--blue);}
+  .sentence .blank.ok{color:var(--ok);}
+  .sentence .blank.ng{color:var(--ng);}
+  .sentence.jp{font-family:inherit;font-weight:900;}
+  .hint:empty,.qtype:empty{visibility:hidden;}
+  .hint{text-align:center;font-weight:700;font-size:min(2vw,3vh);color:#4a3b28;background:#fff8e0;border:3px solid #c9b88f;padding:.4em .6em;}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:1.4vh 1.2vw;}
+  .choice{font-family:"Arial Rounded MT Bold","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:min(2.8vw,4vh);
+    min-height:max(64px,11vh);background:#fff;border:var(--px) solid var(--ink);
+    box-shadow:inset -6px -6px 0 #cfc7b0, inset 6px 6px 0 #fff;padding:.2em .4em;}
+  .choice.jp{font-family:inherit;font-weight:900;}
+  .choice:active{transform:translateY(3px);}
+  .choice.ok{background:#bff3c3;box-shadow:inset -6px -6px 0 #7fd389, inset 6px 6px 0 #e9ffe9;}
+  .choice.ng{background:#ffc9c4;box-shadow:inset -6px -6px 0 #e78a83, inset 6px 6px 0 #fff0ee;}
+  .choice:disabled{cursor:default;}
+  .choice:disabled:not(.ok):not(.ng){opacity:.55;}
+  .feedback{min-height:56px;display:flex;align-items:center;justify-content:center;gap:1vw;font-weight:900;font-size:min(2.4vw,3.4vh);}
+  .feedback .ok{color:var(--ok);} .feedback .ng{color:var(--ng);}
+
+  /* ===== モーダル ===== */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:20;}
+  .modal.active{display:flex;}
+  .modal .px-box{padding:3vh 3vw;min-width:46vw;max-width:80vw;text-align:center;display:flex;flex-direction:column;gap:2vh;align-items:center;}
+  .modal h2{font-size:min(5vw,7vh);font-weight:900;}
+  .modal p{font-size:min(2.3vw,3.3vh);font-weight:700;line-height:1.6;}
+  .modal .big-coin{font-size:min(3.6vw,5vh);font-weight:900;display:flex;align-items:center;gap:.4em;}
+  .modal .row{display:flex;gap:1.5vw;flex-wrap:wrap;justify-content:center;}
+  .modal .px-btn{font-size:min(2.4vw,3.4vh);}
+  .win h2{color:var(--grass-d);} .lose h2{color:var(--red);}
+
+  #rotate{position:fixed;inset:0;background:#2a1d12;color:#fff;display:none;align-items:center;justify-content:center;
+    text-align:center;font-weight:900;font-size:6vw;z-index:50;padding:5vw;line-height:1.6;}
+  @media (orientation:portrait) and (max-width:900px){ #rotate{display:flex;} }
+</style>
+</head>
+<body>
+
+<!-- ===== ホーム ===== -->
+<section id="home" class="screen active">
+  <div class="corner">
+    <button class="px-btn gray corner-btn" id="btn-bgm-home">BGM：ON</button>
+    <button class="px-btn gray corner-btn" id="btn-mute-home">こうかおん：ON</button>
+  </div>
+  <div class="title">えいごクエスト</div>
+  <div class="sub">小6のえいごで モンスターをたおそう！</div>
+  <div class="home-status">
+    <div class="px-box"><span class="coin"></span>コイン <span id="home-coins">0</span></div>
+    <div class="px-box"><img class="weapon-chip" id="home-weapon-img" alt="">そうび：<span id="home-weapon"></span></div>
+    <div class="px-box">といた もんだい <span id="home-solved">0</span></div>
+  </div>
+  <button class="px-btn" id="btn-battle">バトルへ ▶</button>
+  <div class="home-menu">
+    <button class="px-btn blue" id="btn-equip">そうび</button>
+    <button class="px-btn blue" id="btn-gacha">ガチャ</button>
+    <button class="px-btn gray" disabled>ずかん<small>（じゅんびちゅう）</small></button>
+    <button class="px-btn gray" disabled>きろく<small>（じゅんびちゅう）</small></button>
+  </div>
+</section>
+
+<!-- ===== バトル ===== -->
+<section id="battle" class="screen">
+  <div class="topbar">
+    <div class="px-box combo">コンボ<b id="combo">0</b></div>
+    <div class="px-box dice" id="dice-box">うんめいのダイス <span class="die blank" id="dice-mini"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+    <div class="px-box"><span class="coin"></span>&nbsp;こんかい&nbsp;<span id="run-coins">0</span></div>
+    <div class="spacer"></div>
+    <button class="px-btn gray" id="btn-bgm">BGM：ON</button>
+    <button class="px-btn gray" id="btn-mute">こうかおん：ON</button>
+    <button class="px-btn gray" id="btn-quit">にげる</button>
+  </div>
+  <div class="battle-main">
+    <div class="arena" id="arena">
+      <img class="bg" id="monster-img" alt="">
+      <div class="boss" id="boss"><img id="boss-f1" alt=""><img id="boss-f2" alt=""></div>
+      <div class="boss-in" id="boss-in">ボスが あらわれた！</div>
+      <div class="dice-roll" id="dice-roll">
+        <div class="dtitle">うんめいのダイス！</div>
+        <div class="die" id="dice-big"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="dres" id="dice-res"></div>
+      </div>
+      <div class="fallback" id="monster-fallback"></div>
+      <div class="slash" id="slash"></div>
+      <div class="dmg" id="dmg"></div>
+      <div class="hud">
+        <div class="mname" id="mname"></div>
+        <div class="hpbar"><div class="fill" id="hpfill"></div><div class="num" id="hpnum"></div></div>
+        <div class="bonuses" id="bonuses"></div>
+      </div>
+      <div class="hearts" id="hearts"><span class="label">ハート</span></div>
+    </div>
+    <div class="qpanel px-box">
+      <div class="qmeta"><span class="qtype" id="qtype"></span><span id="qunit"></span></div>
+      <div class="sentence" id="sentence"></div>
+      <div class="hint" id="hint"></div>
+      <div class="choices" id="choices"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== そうび ===== -->
+<section id="equip" class="screen sub-screen">
+  <div class="subbar">
+    <button class="px-btn gray" data-home>◀ もどる</button>
+    <div class="tabs">
+      <button class="tab on">ぶき</button>
+      <button class="tab" disabled>スキン<small>（じゅんびちゅう）</small></button>
+    </div>
+    <div class="spacer"></div>
+    <div class="px-box coinbox"><span class="coin"></span><span class="js-coins">0</span></div>
+  </div>
+  <div class="equip-main">
+    <div class="wgrid" id="wgrid"></div>
+    <div class="wdetail px-box" id="wdetail"></div>
+  </div>
+</section>
+
+<!-- ===== ガチャ ===== -->
+<section id="gacha" class="screen sub-screen">
+  <div class="subbar">
+    <button class="px-btn gray" data-home>◀ もどる</button>
+    <div class="subtitle">ぶきガチャ</div>
+    <div class="spacer"></div>
+    <div class="px-box coinbox"><span class="coin"></span><span class="js-coins">0</span></div>
+  </div>
+  <div class="gacha-main">
+    <div class="gacha-stage px-box" id="gacha-stage">
+      <div class="chest-wrap" id="chest-wrap">
+        <div class="halo"></div>
+        <div class="sparks"><i class="spark"></i><i class="spark"></i><i class="spark"></i><i class="spark"></i><i class="spark"></i></div>
+        <div class="pedestal"></div>
+        <div class="chest" id="chest"><div class="beam"></div><div class="chest-lid"></div><div class="chest-body"><div class="chest-lock"></div></div></div>
+      </div>
+      <div class="flash" id="gflash"></div>
+      <div class="gacha-result" id="gacha-result"></div>
+    </div>
+    <div class="gacha-side px-box">
+      <button class="px-btn" id="btn-pull">1かい ひく<small><span class="coin"></span> 100コイン</small></button>
+      <button class="px-btn blue" id="btn-ticket">むりょうけんで ひく<small><span class="ticket-ico"></span>のこり <span id="tickets">0</span>まい</small></button>
+      <div class="rates" id="rates"></div>
+      <p class="note">おなじぶきが でたら コインに かわるよ</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== モーダル ===== -->
+<div class="modal" id="modal"><div class="px-box" id="modal-box"></div></div>
+<div id="rotate">タブレットを<br>よこむきにしてね</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ============================================================
+   もんだいデータ（小6・Here We Go! の範囲）
+   type: "fill"=あなうめ / "word"=たんご
+   ============================================================ */
+const QUESTIONS = [
+  // --- I can ~. ---
+  {type:"fill", unit:"できること", sentence:"I can ___ English.", answer:"speak", choices:["speak","swim","jump","run"], japanese:"わたしは英語を話せます。"},
+  {type:"fill", unit:"できること", sentence:"I can play the ___.", answer:"piano", choices:["piano","soccer","tennis","baseball"], japanese:"わたしはピアノをひけます。"},
+  {type:"fill", unit:"できること", sentence:"I can't ___ well.", answer:"swim", choices:["swim","eat","sleep","read"], japanese:"わたしはじょうずに泳げません。"},
+  {type:"fill", unit:"できること", sentence:"Can you ___?", answer:"cook", choices:["cook","cooks","cooking","cooked"], japanese:"あなたは料理ができますか。"},
+  {type:"fill", unit:"できること", sentence:"She can ___ a unicycle.", answer:"ride", choices:["ride","read","eat","sing"], japanese:"かのじょは一輪車に乗れます。"},
+  {type:"fill", unit:"できること", sentence:"He can ___ very well.", answer:"sing", choices:["sing","sings","singing","sang"], japanese:"かれはとてもじょうずに歌えます。"},
+  {type:"fill", unit:"できること", sentence:"I can ___ fast.", answer:"run", choices:["run","read","draw","cook"], japanese:"わたしは速く走れます。"},
+  // --- I want to ~. / I want to be a ~. ---
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to ___ a doctor.", answer:"be", choices:["be","is","am","are"], japanese:"わたしは医者になりたいです。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to be a ___.", answer:"teacher", choices:["teacher","baker","pilot","farmer"], japanese:"わたしは先生になりたいです。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to be a ___.", answer:"baker", choices:["baker","florist","vet","singer"], japanese:"わたしはパン屋さんになりたいです。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to be a ___ player.", answer:"soccer", choices:["soccer","piano","guitar","music"], japanese:"わたしはサッカー選手になりたいです。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to ___ to Italy.", answer:"go", choices:["go","went","eat","see"], japanese:"わたしはイタリアに行きたいです。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to ___ pizza.", answer:"eat", choices:["eat","ate","go","swim"], japanese:"わたしはピザを食べたいです。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"What do you want to ___?", answer:"be", choices:["be","is","are","am"], japanese:"あなたは何になりたいですか。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to ___ the Eiffel Tower.", answer:"see", choices:["see","saw","eat","swim"], japanese:"わたしはエッフェル塔を見たいです。"},
+  // --- 過去形 ---
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ to the beach.", answer:"went", choices:["went","go","goes","going"], japanese:"わたしは海に行きました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ fireworks.", answer:"saw", choices:["saw","see","went","ate"], japanese:"わたしは花火を見ました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ curry and rice.", answer:"ate", choices:["ate","eat","went","saw"], japanese:"わたしはカレーライスを食べました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ swimming.", answer:"enjoyed", choices:["enjoyed","enjoy","saw","ate"], japanese:"わたしは水泳を楽しみました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"It ___ fun.", answer:"was", choices:["was","is","are","be"], japanese:"それは楽しかったです。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"My summer vacation ___ great.", answer:"was", choices:["was","is","were","be"], japanese:"わたしの夏休みはさいこうでした。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ to Kyoto with my family.", answer:"went", choices:["went","go","saw","ate"], japanese:"わたしは家族と京都へ行きました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ a big fish.", answer:"saw", choices:["saw","see","went","was"], japanese:"わたしは大きな魚を見ました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"It was ___.", answer:"delicious", choices:["delicious","tall","sleepy","fast"], japanese:"それはとてもおいしかったです。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"How ___ your summer vacation?", answer:"was", choices:["was","are","do","can"], japanese:"あなたの夏休みはどうでしたか。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"What did you ___?", answer:"do", choices:["do","did","does","doing"], japanese:"あなたは何をしましたか。"},
+  // --- My town ---
+  {type:"fill", unit:"わたしの町", sentence:"Go ___.", answer:"straight", choices:["straight","turn","see","can"], japanese:"まっすぐ行ってください。"},
+  {type:"fill", unit:"わたしの町", sentence:"Turn ___.", answer:"left", choices:["left","right","on","go"], japanese:"左に曲がってください。"},
+  {type:"fill", unit:"わたしの町", sentence:"Turn right at the ___ corner.", answer:"second", choices:["second","first","third","last"], japanese:"二つ目の角を右に曲がってください。"},
+  {type:"fill", unit:"わたしの町", sentence:"You can ___ it on your left.", answer:"see", choices:["see","go","eat","swim"], japanese:"左手に見えます。"},
+  {type:"fill", unit:"わたしの町", sentence:"We ___ a library in our town.", answer:"have", choices:["have","has","is","are"], japanese:"わたしたちの町には図書館があります。"},
+  {type:"fill", unit:"わたしの町", sentence:"We don't have a ___.", answer:"zoo", choices:["zoo","park","school","station"], japanese:"（わたしたちの町には）動物園がありません。"},
+  {type:"fill", unit:"わたしの町", sentence:"I want a ___ in my town.", answer:"swimming pool", choices:["swimming pool","hospital","post office","bookstore"], japanese:"わたしは町にプールがほしいです。"},
+  {type:"fill", unit:"わたしの町", sentence:"Where is the ___?", answer:"station", choices:["station","library","hospital","park"], japanese:"駅はどこですか。"},
+  // --- 中学校生活 ---
+  {type:"fill", unit:"中学校生活", sentence:"I want to join the ___ club.", answer:"brass band", choices:["brass band","art","science","cooking"], japanese:"わたしは吹奏楽部に入りたいです。"},
+  {type:"fill", unit:"中学校生活", sentence:"I want to join the ___ team.", answer:"basketball", choices:["basketball","volleyball","baseball","soccer"], japanese:"わたしはバスケットボール部に入りたいです。"},
+  {type:"fill", unit:"中学校生活", sentence:"I'm good at ___.", answer:"singing", choices:["singing","sing","sang","sings"], japanese:"わたしは歌うことが得意です。"},
+  {type:"fill", unit:"中学校生活", sentence:"I'm good at ___.", answer:"cooking", choices:["cooking","cook","cooked","cooks"], japanese:"わたしは料理が得意です。"},
+  {type:"fill", unit:"中学校生活", sentence:"I want to study ___ hard.", answer:"math", choices:["math","science","music","P.E."], japanese:"わたしは数学を一生けんめい勉強したいです。"},
+  {type:"fill", unit:"中学校生活", sentence:"I want to ___ many friends.", answer:"make", choices:["make","eat","see","go"], japanese:"わたしはたくさん友だちをつくりたいです。"},
+  {type:"fill", unit:"中学校生活", sentence:"What club do you want to ___?", answer:"join", choices:["join","eat","go","see"], japanese:"あなたは何部に入りたいですか。"},
+  {type:"fill", unit:"中学校生活", sentence:"I want to enjoy ___ day.", answer:"sports", choices:["sports","music","birthday","school"], japanese:"わたしは体育祭を楽しみたいです。"},
+
+  // --- たんご（英→日） ---
+  {type:"word", dir:"ej", unit:"きせつ", sentence:"summer", answer:"夏", choices:["夏","冬","春","秋"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"曜日", sentence:"Wednesday", answer:"水曜日", choices:["水曜日","月曜日","金曜日","日曜日"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"教科", sentence:"science", answer:"理科", choices:["理科","算数","社会","音楽"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"場所", sentence:"hospital", answer:"病院", choices:["病院","図書館","駅","公園"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"職業", sentence:"firefighter", answer:"消防士", choices:["消防士","警察官","パイロット","農家"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"月", sentence:"August", answer:"8月", choices:["8月","4月","10月","12月"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"ようす", sentence:"delicious", answer:"おいしい", choices:["おいしい","たのしい","おおきい","はやい"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"ようす", sentence:"beautiful", answer:"きれいな", choices:["きれいな","ねむい","からい","さむい"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"場所", sentence:"library", answer:"図書館", choices:["図書館","本屋","学校","病院"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"職業", sentence:"vet", answer:"じゅうい", choices:["じゅうい","医者","先生","コック"], japanese:"このえいごの いみは？"},
+  // --- たんご（日→英） ---
+  {type:"word", dir:"je", unit:"きせつ", sentence:"冬", answer:"winter", choices:["winter","summer","spring","fall"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"月", sentence:"12月", answer:"December", choices:["December","November","October","September"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"教科", sentence:"体育", answer:"P.E.", choices:["P.E.","math","music","English"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"職業", sentence:"医者", answer:"doctor", choices:["doctor","nurse","teacher","cook"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"場所", sentence:"公園", answer:"park", choices:["park","station","zoo","school"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"曜日", sentence:"金曜日", answer:"Friday", choices:["Friday","Tuesday","Thursday","Saturday"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"教科", sentence:"音楽", answer:"music", choices:["music","art","science","social studies"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"職業", sentence:"宇宙飛行士", answer:"astronaut", choices:["astronaut","pilot","scientist","police officer"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"場所", sentence:"本屋", answer:"bookstore", choices:["bookstore","library","restaurant","post office"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"職業", sentence:"農家", answer:"farmer", choices:["farmer","florist","baker","singer"], japanese:"えいごで なんという？"},
+  // --- 2026-11-24 追加（60問） ---
+  {type:"fill", unit:"できること", sentence:"I can ___ a bike.", answer:"ride", choices:["ride", "read", "eat", "sing"], japanese:"わたしは自転車に乗れます。"},
+  {type:"fill", unit:"できること", sentence:"Can you ___ the guitar?", answer:"play", choices:["play", "eat", "run", "go"], japanese:"あなたはギターをひけますか。"},
+  {type:"fill", unit:"できること", sentence:"Yes, I ___.", answer:"can", choices:["can", "do", "am", "is"], japanese:"（Can you ～? に）はい、できます。"},
+  {type:"fill", unit:"できること", sentence:"My brother can ___ very well.", answer:"ski", choices:["ski", "skis", "skiing", "skied"], japanese:"わたしの兄はとてもじょうずにスキーができます。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to be a ___.", answer:"vet", choices:["vet", "nurse", "cook", "florist"], japanese:"わたしはじゅういになりたいです。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to be an ___.", answer:"astronaut", choices:["astronaut", "farmer", "singer", "baker"], japanese:"わたしは宇宙飛行士になりたいです。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I want to help ___.", answer:"animals", choices:["animals", "books", "pianos", "buses"], japanese:"わたしは動物を助けたいです。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I'm good at ___.", answer:"drawing", choices:["drawing", "draw", "drew", "draws"], japanese:"わたしは絵をかくことが得意です。"},
+  {type:"fill", unit:"しょうらいのゆめ", sentence:"I like ___.", answer:"children", choices:["children", "animals", "books", "sports"], japanese:"わたしは子どもが好きです。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ to my grandmother's house.", answer:"went", choices:["went", "go", "saw", "ate"], japanese:"わたしは祖母の家に行きました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ a summer festival.", answer:"enjoyed", choices:["enjoyed", "enjoy", "ate", "go"], japanese:"わたしは夏祭りを楽しみました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ a lot of homework.", answer:"did", choices:["did", "do", "does", "went"], japanese:"わたしはたくさん宿題をしました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"It was very ___.", answer:"hot", choices:["hot", "cold", "sleepy", "small"], japanese:"とても暑かったです。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I went ___.", answer:"swimming", choices:["swimming", "swim", "swam", "swims"], japanese:"わたしは泳ぎに行きました。"},
+  {type:"fill", unit:"夏休みの思い出", sentence:"I ___ camping with my friends.", answer:"went", choices:["went", "go", "saw", "ate"], japanese:"わたしは友だちとキャンプに行きました。"},
+  {type:"fill", unit:"わたしの町", sentence:"We have a nice ___.", answer:"park", choices:["park", "river", "station", "museum"], japanese:"（わたしたちの町には）すてきな公園があります。"},
+  {type:"fill", unit:"わたしの町", sentence:"We don't have a ___.", answer:"movie theater", choices:["movie theater", "park", "school", "library"], japanese:"（わたしたちの町には）映画館がありません。"},
+  {type:"fill", unit:"わたしの町", sentence:"I want a big ___ in my town.", answer:"aquarium", choices:["aquarium", "park", "school", "station"], japanese:"わたしは町に大きな水族館がほしいです。"},
+  {type:"fill", unit:"わたしの町", sentence:"Turn ___ at the first corner.", answer:"right", choices:["right", "left", "straight", "go"], japanese:"一つ目の角を右に曲がってください。"},
+  {type:"fill", unit:"わたしの町", sentence:"The library is ___ your right.", answer:"on", choices:["on", "in", "at", "to"], japanese:"図書館は右手にあります。"},
+  {type:"fill", unit:"中学校生活", sentence:"I want to join the ___ club.", answer:"art", choices:["art", "science", "music", "cooking"], japanese:"わたしは美術部に入りたいです。"},
+  {type:"fill", unit:"中学校生活", sentence:"I want to read many ___.", answer:"books", choices:["books", "movies", "songs", "games"], japanese:"わたしはたくさん本を読みたいです。"},
+  {type:"fill", unit:"中学校生活", sentence:"I want to enjoy the school ___.", answer:"festival", choices:["festival", "trip", "lunch", "bus"], japanese:"わたしは文化祭を楽しみたいです。"},
+  {type:"fill", unit:"中学校生活", sentence:"I want to ___ hard.", answer:"study", choices:["study", "studies", "studying", "studied"], japanese:"わたしは一生けんめい勉強したいです。"},
+  {type:"fill", unit:"中学校生活", sentence:"What do you want to ___ in junior high school?", answer:"do", choices:["do", "did", "does", "doing"], japanese:"あなたは中学校で何をしたいですか。"},
+  {type:"fill", unit:"中学校生活", sentence:"I want to be good at ___.", answer:"English", choices:["English", "Japanese", "math", "science"], japanese:"わたしは英語がじょうずになりたいです。"},
+  {type:"fill", unit:"日本のしょうかい", sentence:"In summer, we ___ the Tanabata Festival.", answer:"have", choices:["have", "has", "is", "are"], japanese:"夏には七夕祭りがあります。"},
+  {type:"fill", unit:"日本のしょうかい", sentence:"You can ___ sushi.", answer:"eat", choices:["eat", "see", "play", "swim"], japanese:"すしを食べることができます。"},
+  {type:"fill", unit:"日本のしょうかい", sentence:"You can ___ beautiful cherry blossoms.", answer:"see", choices:["see", "eat", "play", "drink"], japanese:"美しい桜を見ることができます。"},
+  {type:"fill", unit:"日本のしょうかい", sentence:"It's ___.", answer:"fun", choices:["fun", "sad", "sleepy", "hungry"], japanese:"それは楽しいです。"},
+  {type:"fill", unit:"日本のしょうかい", sentence:"Welcome to ___.", answer:"Japan", choices:["Japan", "Japanese", "China", "Italy"], japanese:"日本へようこそ。"},
+  {type:"fill", unit:"日本のしょうかい", sentence:"Kendama is a traditional Japanese ___.", answer:"toy", choices:["toy", "food", "song", "sport"], japanese:"けん玉は日本の伝統的なおもちゃです。"},
+  {type:"fill", unit:"日本のしょうかい", sentence:"We have Children's Day in ___.", answer:"May", choices:["May", "March", "July", "June"], japanese:"5月にこどもの日があります。"},
+  {type:"fill", unit:"自己しょうかい", sentence:"My ___ is Ken.", answer:"name", choices:["name", "age", "color", "sport"], japanese:"わたしの名前はケンです。"},
+  {type:"fill", unit:"自己しょうかい", sentence:"My birthday is ___ 5th.", answer:"April", choices:["April", "August", "March", "June"], japanese:"わたしの誕生日は4月5日です。"},
+  {type:"fill", unit:"自己しょうかい", sentence:"My favorite ___ is blue.", answer:"color", choices:["color", "food", "sport", "animal"], japanese:"わたしの好きな色は青です。"},
+  {type:"fill", unit:"自己しょうかい", sentence:"My favorite sport is ___.", answer:"soccer", choices:["soccer", "music", "pizza", "math"], japanese:"わたしの好きなスポーツはサッカーです。"},
+  {type:"fill", unit:"自己しょうかい", sentence:"I'm ___ Osaka.", answer:"from", choices:["from", "in", "at", "to"], japanese:"わたしは大阪出身です。"},
+  {type:"fill", unit:"自己しょうかい", sentence:"I ___ a dog.", answer:"have", choices:["have", "has", "am", "is"], japanese:"わたしは犬を飼っています。"},
+  {type:"fill", unit:"自己しょうかい", sentence:"When is your ___?", answer:"birthday", choices:["birthday", "name", "school", "favorite"], japanese:"あなたの誕生日はいつですか。"},
+  {type:"word", dir:"ej", unit:"きせつ", sentence:"spring", answer:"春", choices:["春", "夏", "秋", "冬"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"曜日", sentence:"Monday", answer:"月曜日", choices:["月曜日", "火曜日", "木曜日", "土曜日"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"教科", sentence:"math", answer:"算数", choices:["算数", "国語", "理科", "社会"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"場所", sentence:"station", answer:"駅", choices:["駅", "公園", "病院", "学校"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"職業", sentence:"nurse", answer:"看護師", choices:["看護師", "医者", "先生", "歌手"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"月", sentence:"January", answer:"1月", choices:["1月", "6月", "7月", "11月"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"ようす", sentence:"hungry", answer:"おなかがすいた", choices:["おなかがすいた", "ねむい", "たのしい", "さむい"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"食べ物", sentence:"strawberry", answer:"いちご", choices:["いちご", "りんご", "ぶどう", "もも"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"自然", sentence:"river", answer:"川", choices:["川", "山", "海", "湖"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"ej", unit:"気持ち", sentence:"happy", answer:"うれしい", choices:["うれしい", "かなしい", "つかれた", "こわい"], japanese:"このえいごの いみは？"},
+  {type:"word", dir:"je", unit:"曜日", sentence:"火曜日", answer:"Tuesday", choices:["Tuesday", "Thursday", "Sunday", "Monday"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"月", sentence:"3月", answer:"March", choices:["March", "May", "April", "January"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"教科", sentence:"国語", answer:"Japanese", choices:["Japanese", "English", "math", "science"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"職業", sentence:"警察官", answer:"police officer", choices:["police officer", "firefighter", "doctor", "pilot"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"場所", sentence:"動物園", answer:"zoo", choices:["zoo", "park", "aquarium", "museum"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"行事", sentence:"夏休み", answer:"summer vacation", choices:["summer vacation", "winter vacation", "school trip", "sports day"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"自然", sentence:"海", answer:"sea", choices:["sea", "river", "mountain", "lake"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"ようす", sentence:"寒い", answer:"cold", choices:["cold", "hot", "warm", "cool"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"教科", sentence:"図工", answer:"arts and crafts", choices:["arts and crafts", "home economics", "P.E.", "music"], japanese:"えいごで なんという？"},
+  {type:"word", dir:"je", unit:"職業", sentence:"歌手", answer:"singer", choices:["singer", "dancer", "baker", "pilot"], japanese:"えいごで なんという？"},
+];
+
+/* ============================================================
+   モンスター（3体＋ボス）
+   ============================================================ */
+const MONSTERS = [
+  {id:"slime", name:"スライム",         hp:4,  img:"assets/monster-slime.webp", color:"#4caf3a"},
+  {id:"bird",  name:"あおいとり",       hp:6,  img:"assets/monster-bird.webp",  color:"#2f6fd6"},
+  {id:"wolf",  name:"たてがみオオカミ", hp:10, img:"assets/monster-wolf.webp",  color:"#8a5a2b"},
+  // ボス（仕様書セクション9「ボス詳細（確定）」）
+  {id:"golem", name:"いわゴーレム", hp:20, boss:true, heartLoss:2, color:"#3a2a3e",
+   img:"assets/boss-golem-bg.webp", sprites:["assets/boss-golem.png","assets/boss-golem-2.png"]},
+];
+
+/* ============================================================
+   ぶき（仕様書セクション9 確定リスト）
+   rarity 0 = 初期武器（ガチャに出ない）
+   ============================================================ */
+const WEAPONS = [
+  {id:"stick",         name:"ぼうきれ",           rarity:0, atk:1},
+  {id:"dagger",        name:"ダガー",             rarity:1, atk:1},
+  {id:"shortsword",    name:"ショートソード",     rarity:1, atk:1},
+  {id:"club",          name:"こんぼう",           rarity:1, atk:1},
+  {id:"spear",         name:"やり",               rarity:2, atk:2},
+  {id:"mace",          name:"メイス",             rarity:2, atk:2},
+  {id:"axe",           name:"てつのオノ",         rarity:2, atk:2},
+  {id:"longsword",     name:"ロングソード",       rarity:3, atk:3},
+  {id:"flail",         name:"フレイル",           rarity:3, atk:3},
+  {id:"longbow",       name:"ロングボウ",         rarity:3, atk:3},
+  {id:"magicstaff",    name:"まほうのつえ",       rarity:4, atk:4},
+  {id:"firesword",     name:"ほのおのつるぎ",     rarity:4, atk:4},
+  {id:"icespear",      name:"こおりのやり",       rarity:4, atk:4},
+  {id:"thunderhammer", name:"いかずちのハンマー", rarity:5, atk:6},
+  {id:"starsword",     name:"ほしのつるぎ",       rarity:5, atk:6},
+].map(w => ({...w, img:`assets/weapon-${w.id}.png`}));
+const WMAP = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
+
+const GACHA_COST  = 100;
+const GACHA_RATES = {1:55, 2:27, 3:12, 4:5, 5:1};           // ％
+const DUP_COINS   = {1:10, 2:20, 3:30, 4:50, 5:100};        // かぶり→コイン
+const MAX_LV      = 5;
+const upgradeCost = lv => 50 * lv;                          // Lv→Lv+1 の費用
+
+const MAX_HEARTS = 5;
+
+/* ============================================================
+   セーブデータ（localStorage）
+   ============================================================ */
+const SAVE_KEY = "eigoQuest.v1";
+const save = loadSave();
+function loadSave(){
+  const base = {coins:0, solved:0, correct:0, muted:false, bgmOff:false, owned:{stick:1}, equipped:"stick", tickets:0};
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw){
+      const s = Object.assign(base, JSON.parse(raw));
+      // こわれたデータのまもり
+      if(!s.owned || typeof s.owned !== "object") s.owned = {};
+      for(const id of Object.keys(s.owned)){
+        if(!WMAP[id]) delete s.owned[id];
+        else s.owned[id] = Math.max(1, Math.min(MAX_LV, s.owned[id]|0));
+      }
+      if(!s.owned.stick) s.owned.stick = 1;
+      if(!s.owned[s.equipped]) s.equipped = "stick";
+      s.tickets = Math.max(0, s.tickets|0);
+      return s;
+    }
+  }catch(e){}
+  return base;
+}
+function weaponAtk(id){ return WMAP[id].atk + ((save.owned[id] || 1) - 1); } // 1レベルごとに+1
+function equippedWeapon(){ return WMAP[save.equipped]; }
+function writeSave(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
+}
+
+/* ============================================================
+   こうかおん（WebAudio ビープ）
+   ============================================================ */
+let actx = null;
+function audio(){
+  actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state === "suspended") actx.resume();
+  return actx;
+}
+function beep(seq){
+  if(save.muted) return;
+  try{
+    audio();
+    let t = actx.currentTime;
+    seq.forEach(([freq, dur, type]) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || "square"; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur);
+      t += dur * 0.9;
+    });
+  }catch(e){}
+}
+const SFX = {
+  ok:   () => beep([[660,.08],[880,.08],[1320,.14]]),
+  ng:   () => beep([[220,.12,"sawtooth"],[160,.22,"sawtooth"]]),
+  hit:  () => beep([[300,.05,"triangle"],[150,.08,"triangle"]]),
+  win:  () => beep([[523,.1],[659,.1],[784,.1],[1047,.25]]),
+  lose: () => beep([[392,.18,"triangle"],[330,.18,"triangle"],[262,.35,"triangle"]]),
+  tap:  () => beep([[880,.04]]),
+};
+
+
+/* ============================================================
+   BGM（WebAudio でつくるピコピコ音楽・音源ファイルなし）
+   1文字目=音名、数字=オクターブ、"-"=のばす、"."=休み。1マス=8分音符
+   ============================================================ */
+const SONGS = {
+  home: { bpm:112,
+    lead:"E5 - G5 - C6 - G5 - A5 - G5 E5 - D5 - E5 - C5 - D5 - - - E5 - G5 - C6 - G5 - A5 - C6 - B5 A5 G5 - E5 - D5 - C5 - - - - ",
+    bass:"C3 . G3 . C3 . G3 . F3 . C4 . F3 . C4 . G2 . D3 . G2 . D3 . C3 . G3 . C3 . G3 . F3 . C4 . F3 . C4 . G2 . D3 . C3 . . . " },
+  battle: { bpm:148,
+    lead:"A4 A4 C5 A4 E5 - D5 C5 B4 B4 D5 B4 E5 - - - A4 A4 C5 A4 F5 - E5 D5 C5 B4 A4 G#4 A4 - - - C5 C5 E5 C5 G5 - F5 E5 D5 D5 F5 D5 A5 - - - E5 D5 C5 B4 C5 B4 A4 G#4 A4 - E4 - A4 - - - ",
+    bass:"A2 A3 A2 A3 A2 A3 A2 A3 G2 G3 G2 G3 G2 G3 G2 G3 F2 F3 F2 F3 F2 F3 F2 F3 E2 E3 E2 E3 E2 E3 E2 E3 A2 A3 A2 A3 A2 A3 A2 A3 D3 D4 D3 D4 D3 D4 D3 D4 E2 E3 E2 E3 E2 E3 E2 E3 A2 A3 A2 A3 A2 . . . " },
+  boss: { bpm:172,
+    lead:"E5 E5 G5 E5 B5 - A5 G5 F#5 F#5 A5 F#5 B5 - - - E5 E5 G5 E5 C6 - B5 A5 G5 F#5 E5 D#5 E5 - - - B5 - A5 G5 A5 - G5 F#5 G5 - F#5 E5 F#5 - D#5 - E5 G5 B5 E6 D6 C6 B5 A5 B5 - D#5 - E5 - - - ",
+    bass:"E2 E3 E2 E3 E2 E3 E2 E3 D2 D3 D2 D3 D2 D3 D2 D3 C2 C3 C2 C3 C2 C3 C2 C3 B1 B2 B1 B2 B1 B2 B1 B2 C2 C3 C2 C3 A1 A2 A1 A2 B1 B2 B1 B2 B1 B2 B1 B2 E2 E3 E2 E3 C2 C3 C2 C3 B1 B2 B1 B2 E2 . E2 . " },
+};
+const NOTE = {C:0,"C#":1,D:2,"D#":3,E:4,F:5,"F#":6,G:7,"G#":8,A:9,"A#":10,B:11};
+function freqOf(n){ const m = n.match(/^([A-G]#?)(\d)$/); return 440 * Math.pow(2, (NOTE[m[1]] + (+m[2]+1)*12 - 69) / 12); }
+function parseTrack(str){
+  // ["E5","-","G5",...] → [{f, len}] を 8分音符の位置ごとに
+  const t = str.trim().split(/\s+/), out = [];
+  t.forEach((tok, i) => {
+    if(tok === "-" || tok === ".") return;
+    let len = 1; while(t[i+len] === "-") len++;
+    out.push({i, f:freqOf(tok), len});
+  });
+  return {steps:t.length, notes:out};
+}
+const BGM = (() => {
+  let cur = null, want = null, timer = null, gain = null, step = 0, nextT = 0, parsed = {};
+  function stop(){
+    if(timer){ clearInterval(timer); timer = null; }
+    if(gain){ const g = gain; try{ g.gain.setTargetAtTime(0, actx.currentTime, .05); }catch(e){} setTimeout(() => g.disconnect(), 300); gain = null; }
+    cur = null;
+  }
+  function start(name){
+    const ctx = audio();
+    const song = SONGS[name];
+    parsed[name] = parsed[name] || {lead:parseTrack(song.lead), bass:parseTrack(song.bass)};
+    const P = parsed[name], dur = 60 / song.bpm / 2;  // 8分音符の秒数
+    gain = ctx.createGain(); gain.gain.value = 0.5; gain.connect(ctx.destination);
+    const g = gain;
+    step = 0; nextT = ctx.currentTime + .08; cur = name;
+    const play = (track, type, vol) => (s, t) => {
+      track.notes.forEach(n => {
+        if(n.i !== s) return;
+        const o = ctx.createOscillator(), v = ctx.createGain();
+        o.type = type; o.frequency.value = n.f;
+        const d = n.len * dur;
+        v.gain.setValueAtTime(vol, t); v.gain.setValueAtTime(vol, t + d*.75); v.gain.linearRampToValueAtTime(0.0001, t + d*.95);
+        o.connect(v).connect(g); o.start(t); o.stop(t + d);
+      });
+    };
+    const lead = play(P.lead, "square", .045), bass = play(P.bass, "triangle", .09);
+    timer = setInterval(() => {
+      while(nextT < ctx.currentTime + .25){
+        lead(step % P.lead.steps, nextT);
+        bass(step % P.bass.steps, nextT);
+        step++; nextT += dur;
+      }
+    }, 60);
+  }
+  function sync(){
+    if(save.bgmOff || !want || !unlocked){ stop(); return; }
+    if(cur === want) return;
+    stop();
+    try{ start(want); }catch(e){}
+  }
+  let unlocked = false;
+  // ブラウザは さいしょのタップまで音を出せないので、そこで開始
+  const unlock = () => { unlocked = true; sync(); };
+  document.addEventListener("pointerdown", unlock, {once:true});
+  document.addEventListener("visibilitychange", () => { if(document.hidden) stop(); else sync(); });
+  return { play(name){ want = name; sync(); }, sync };
+})();
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const shuffle = a => { a = a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function show(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+  BGM.play(id === "battle" ? (run.monster && run.monster.boss ? "boss" : "battle") : "home");
+}
+
+/* 問題デッキ：全問を一巡するまで同じ問題は出さない */
+let deck = [];
+function nextQuestion(){
+  if(deck.length === 0) deck = shuffle(QUESTIONS);
+  return deck.pop();
+}
+
+/* ============================================================
+   ホーム
+   ============================================================ */
+function renderHome(){
+  $("home-coins").textContent = save.coins;
+  $("home-solved").textContent = save.solved;
+  const w = equippedWeapon();
+  $("home-weapon").textContent = `${w.name} Lv${save.owned[w.id]}（こうげき${weaponAtk(w.id)}）`;
+  $("home-weapon-img").src = w.img;
+  updateMuteLabels();
+  show("home");
+}
+function renderCoins(){ document.querySelectorAll(".js-coins").forEach(e => e.textContent = save.coins); }
+const starStr = r => r ? "★".repeat(r) : "しょき";
+/* 画像が読めないときは 色つきの箱＋名前 */
+function wImg(w){
+  return `<img src="${w.img}" alt="" onerror="this.outerHTML='<div class=&quot;imgfb&quot;>${w.name}</div>'">`;
+}
+document.querySelectorAll("[data-home]").forEach(b => b.onclick = () => { SFX.tap(); renderHome(); });
+
+/* ============================================================
+   そうび
+   ============================================================ */
+let selId = null;
+$("btn-equip").onclick = () => { SFX.tap(); selId = save.equipped; renderEquip(""); show("equip"); };
+function renderEquip(msg){
+  renderCoins();
+  $("wgrid").innerHTML = WEAPONS.map(w => {
+    const lv = save.owned[w.id];
+    if(!lv) return `<button class="wcard locked r${w.rarity}" data-id="${w.id}">${wImg(w)}<div class="wn">？？？</div></button>`;
+    const cls = ["wcard", "r"+w.rarity, w.id === save.equipped ? "equipped" : "", w.id === selId ? "sel" : ""].join(" ");
+    return `<button class="${cls}" data-id="${w.id}"><span class="lv">Lv${lv}</span>${wImg(w)}
+      <div class="wn">${w.name}</div><div class="stars">${starStr(w.rarity)}</div></button>`;
+  }).join("");
+  $("wgrid").querySelectorAll(".wcard").forEach(b => b.onclick = () => tapWeapon(b.dataset.id));
+  renderDetail(msg);
+}
+function tapWeapon(id){
+  selId = id;
+  if(save.owned[id]){ // タップで装備
+    const changed = save.equipped !== id;
+    save.equipped = id; writeSave();
+    SFX.tap();
+    renderEquip(changed ? "そうびした！" : "");
+  }else{
+    SFX.tap(); renderEquip("");
+  }
+}
+function renderDetail(msg){
+  const w = WMAP[selId], box = $("wdetail"), lv = save.owned[w.id];
+  box.className = "wdetail px-box r" + w.rarity;
+  if(!lv){
+    box.innerHTML = `<div class="big locked-big">${wImg(w)}</div><h3>？？？</h3>
+      <div class="stat">まだ もっていない ぶき</div><div class="msg">ガチャで さがそう！</div>`;
+    return;
+  }
+  const atk = weaponAtk(w.id);
+  let up;
+  if(lv >= MAX_LV){
+    up = `<button class="px-btn gray" disabled>さいだいレベル！</button>`;
+  }else{
+    const cost = upgradeCost(lv), can = save.coins >= cost;
+    up = `<button class="px-btn" id="btn-up" ${can ? "" : "disabled"}>きょうか Lv${lv}→${lv+1}<small><span class="coin"></span>${cost}コイン</small></button>`;
+    if(!can && !msg) msg = `コインが たりないよ（あと${cost - save.coins}まい）`;
+  }
+  box.innerHTML = `<div class="big">${wImg(w)}</div>
+    <h3>${w.name}</h3><div class="stars">${starStr(w.rarity)}</div>
+    <div class="stat">Lv${lv}／${MAX_LV}<br>こうげき <b>${atk}</b>${lv < MAX_LV ? `（つぎ ${atk+1}）` : ""}</div>
+    ${up}<div class="msg">${msg || (w.id === save.equipped ? "そうびちゅう" : "")}</div>`;
+  const b = $("btn-up");
+  if(b) b.onclick = () => upgrade(w.id);
+}
+function upgrade(id){
+  const lv = save.owned[id];
+  if(!lv || lv >= MAX_LV) return;
+  const cost = upgradeCost(lv);
+  if(save.coins < cost) return;
+  save.coins -= cost;
+  save.owned[id] = lv + 1;
+  writeSave();
+  SFX.win();
+  renderEquip(`こうげき ${weaponAtk(id)} に なった！`);
+  const big = $("wdetail").querySelector(".big");
+  if(big){
+    big.classList.add("pulse");
+    big.insertAdjacentHTML("beforeend", `<div class="fx"><i></i></div><div class="lvup">レベルアップ！</div>`);
+    setTimeout(() => big.querySelectorAll(".fx,.lvup").forEach(e => e.remove()), 1300);
+  }
+}
+
+/* ============================================================
+   ガチャ
+   ============================================================ */
+$("rates").innerHTML = [5,4,3,2,1].map(r =>
+  `<div><span class="stars">${starStr(r)}</span><span>${GACHA_RATES[r]}%</span></div>`).join("");
+$("btn-gacha").onclick = () => { SFX.tap(); resetGacha(); show("gacha"); };
+function resetGacha(){
+  renderCoins();
+  $("chest").className = "chest";
+  $("chest-wrap").className = "chest-wrap";
+  $("gacha-result").className = "gacha-result";
+  updatePullButtons();
+}
+function updatePullButtons(){
+  $("btn-pull").disabled = pulling || save.coins < GACHA_COST;
+  $("btn-ticket").disabled = pulling || !(save.tickets > 0);
+  $("tickets").textContent = save.tickets|0;
+}
+function rollRarity(){
+  let x = Math.random() * 100;
+  for(const r of [1,2,3,4,5]){ x -= GACHA_RATES[r]; if(x < 0) return r; }
+  return 1;
+}
+function rollWeapon(){
+  const r = rollRarity();
+  const pool = WEAPONS.filter(w => w.rarity === r);   // 同じ★の中は同じ確率
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+var pulling = false;
+$("btn-pull").onclick = () => pull(false);
+$("btn-ticket").onclick = () => pull(true);
+async function pull(useTicket){
+  if(pulling) return;
+  if(useTicket ? !(save.tickets > 0) : save.coins < GACHA_COST) return;
+  pulling = true;
+  updatePullButtons();
+  // 先にけっかを決めて保存（とちゅうで閉じても損しない）
+  const w = rollWeapon(), dup = !!save.owned[w.id];
+  if(useTicket) save.tickets--; else save.coins -= GACHA_COST;
+  if(dup) save.coins += DUP_COINS[w.rarity];
+  else save.owned[w.id] = 1;
+  writeSave();
+  renderCoins();
+
+  const chest = $("chest"), res = $("gacha-result");
+  res.className = "gacha-result";
+  const wrap = $("chest-wrap"), flash = $("gflash");
+  chest.className = "chest";
+  wrap.className = "chest-wrap";
+  void chest.offsetWidth;
+  chest.classList.add("shake");
+  beep([[440,.06],[494,.06],[523,.06],[587,.06],[659,.06],[698,.06],[784,.06]]);
+  await wait(450);
+  wrap.classList.add("r" + w.rarity);        // ★3いじょうは 光の色で予告
+  await wait(450);
+  chest.classList.add("open", "r" + w.rarity);
+  beep([[1047,.05],[1319,.05],[1568,.12]]);
+  await wait(450);
+  flash.classList.remove("go"); void flash.offsetWidth; flash.classList.add("go");
+  await wait(120);
+  wrap.classList.add("hide");
+  res.className = "gacha-result show r" + w.rarity;
+  res.innerHTML = `${dup ? `<div class="tag dup">もってる</div>` : `<div class="tag">NEW!</div>`}
+    ${wImg(w)}<h3>${w.name}</h3><div class="stars">${starStr(w.rarity)}</div>
+    <div class="sub">${dup ? `コイン ${DUP_COINS[w.rarity]}まいに かわった！` : `こうげき ${w.atk}　そうび がめんで つけよう！`}</div>`;
+  if(w.rarity >= 4) SFX.win(); else SFX.ok();
+  pulling = false;
+  updatePullButtons();
+}
+function updateMuteLabels(){
+  const t = save.muted ? "こうかおん：OFF" : "こうかおん：ON";
+  const g = save.bgmOff ? "BGM：OFF" : "BGM：ON";
+  $("btn-mute-home").textContent = t; $("btn-bgm-home").textContent = g;
+  $("btn-mute").textContent = save.muted ? "おと OFF" : "おと ON";      // バトル画面は せまいので みじかく
+  $("btn-bgm").textContent  = save.bgmOff ? "BGM OFF" : "BGM ON";
+  ["btn-mute","btn-mute-home"].forEach(id => $(id).classList.toggle("off", !!save.muted));
+  ["btn-bgm","btn-bgm-home"].forEach(id => $(id).classList.toggle("off", !!save.bgmOff));
+}
+function toggleMute(){ save.muted = !save.muted; writeSave(); updateMuteLabels(); SFX.tap(); }
+function toggleBgm(){ save.bgmOff = !save.bgmOff; writeSave(); updateMuteLabels(); BGM.sync(); }
+$("btn-mute").onclick = toggleMute;
+$("btn-mute-home").onclick = toggleMute;
+$("btn-bgm").onclick = toggleBgm;
+$("btn-bgm-home").onclick = toggleBgm;
+$("btn-battle").onclick = () => { SFX.tap(); startRun(); };
+
+/* ============================================================
+   バトル
+   ラン＝スライム→あおいとり→たてがみオオカミ の連戦。
+   ハートは連戦中もちこし。コインは「ホームへもどる」で持ち帰り、
+   まけたら半分だけ持ち帰り。
+   ============================================================ */
+const run = {stage:0, hearts:MAX_HEARTS, combo:0, coins:0, monster:null, mhp:0, fightMaxCombo:0, busy:false, q:null, dice:0, bonus:{}};
+
+/* ============================================================
+   うんめいのダイス（仕様書セクション9「うんめいのダイス（確定）」）
+   バトル開始時に自動で1回。ボーナスはそのバトル中ずっと有効。
+   ※ごほうびのランダムだけに使う（正誤判定・ダメージ計算の乱数には使わない）
+   ============================================================ */
+const DICE_FACES = {
+  1:{text:"コイン 2ばい！",        sub:"かったときの コインが 2ばい"},
+  2:{text:"こうげき +1！",         sub:"このバトルの あいだ ずっと"},
+  3:{text:"ハート 1つ かいふく！",  sub:"（まんたんなら そのまま）"},
+  4:{text:"コンボ 3から スタート！", sub:"（3いじょうなら そのまま）"},
+  5:{text:"モンスターの HP -2！",   sub:"（さいてい 1）"},
+  6:{text:"大あたり！ ぜんぶのせ！", sub:"1〜5の ボーナスが ぜんぶ！"},
+};
+function diceFace(el, v){ el.className = el.className.replace(/\bv\d\b|\bblank\b/g, "").trim() + " v" + v; }
+const DICE_CHANCE = 0.15;   // ダイスが出てくる確率（バトルごと・ボス戦も同じ）
+function rollDie(){ return 1 + Math.floor(Math.random() * 6); }
+function bonusFor(v){
+  const all = v === 6;
+  return {coin2: all || v === 1, atk1: all || v === 2, heal: all || v === 3, combo3: all || v === 4, hp2: all || v === 5};
+}
+/* ボーナスを このバトルに 当てる。じっさいに効いたかも 記録 */
+function applyBonus(b){
+  const m = run.monster, got = {...b};
+  if(b.heal){ const before = run.hearts; run.hearts = Math.min(MAX_HEARTS, run.hearts + 1); got.healed = run.hearts > before; if(got.healed) renderHearts(); }
+  if(b.combo3){ got.comboUp = run.combo < 3; run.combo = Math.max(run.combo, 3); run.fightMaxCombo = Math.max(run.fightMaxCombo, run.combo); }
+  if(b.hp2){ run.mhp = Math.max(1, m.hp - 2); }
+  run.bonus = got;
+}
+function renderBonuses(){
+  const b = run.bonus, box = $("bonuses"), chips = [];
+  if(b.coin2) chips.push(`<span class="bchip">${run.monster.boss ? "むりょうけん×2" : "コイン×2"}</span>`);
+  if(b.atk1)  chips.push(`<span class="bchip">こうげき+1</span>`);
+  if(b.heal)  chips.push(`<span class="bchip ${b.healed ? "" : "off"}">ハート+1</span>`);
+  if(b.combo3)chips.push(`<span class="bchip ${b.comboUp ? "" : "off"}">コンボ3</span>`);
+  if(b.hp2)   chips.push(`<span class="bchip">HP-2</span>`);
+  box.innerHTML = chips.join("");
+  const mini = $("dice-mini");
+  if(run.dice){ diceFace(mini, run.dice); $("dice-box").classList.add("on"); }
+  else{ mini.className = "die blank"; $("dice-box").classList.remove("on"); }
+}
+async function rollDiceForFight(){
+  const v = rollDie();
+  const ov = $("dice-roll"), big = $("dice-big"), res = $("dice-res");
+  ov.className = "dice-roll show"; res.innerHTML = "";
+  $("dice-roll").querySelector(".dtitle").textContent = "うんめいのダイスが あらわれた！";
+  big.className = "die rolling";
+  let k = 0;
+  const spin = setInterval(() => { diceFace(big, 1 + (k++ % 6)); beep([[600 + (k % 3) * 120, .03]]); }, 90);
+  await wait(1100);
+  clearInterval(spin);
+  big.className = "die land"; diceFace(big, v);
+  run.dice = v;
+  applyBonus(bonusFor(v));
+  const f = DICE_FACES[v];
+  let sub = f.sub;
+  if(v === 1 && run.monster.boss) sub = "ボスの ごほうび むりょうけんが 2まいに！";
+  res.innerHTML = `${v}！ ${f.text}<small>${sub}</small>`;
+  if(v === 6){ ov.classList.add("jackpot"); SFX.win(); } else SFX.ok();
+  renderBonuses(); renderTop(); renderHP();
+  await wait(1500);
+  ov.className = "dice-roll";
+}
+
+function startRun(){
+  Object.assign(run, {stage:0, hearts:MAX_HEARTS, combo:0, coins:0});
+  show("battle");
+  renderHearts();
+  startFight();
+}
+
+async function startFight(){
+  const m = MONSTERS[run.stage];
+  run.monster = m; run.mhp = m.hp; run.fightMaxCombo = run.combo;
+  const arena = $("arena"), img = $("monster-img");
+  arena.classList.remove("noimg");
+  arena.classList.toggle("is-boss", !!m.boss);
+  $("monster-fallback").textContent = m.name;
+  arena.style.background = m.color;
+  img.onerror = () => arena.classList.add("noimg");
+  img.src = m.img;
+  $("mname").textContent = m.name;
+  stopBossAnim();
+  if(m.boss){
+    const f1 = $("boss-f1"), f2 = $("boss-f2");
+    f1.onerror = f2.onerror = () => arena.classList.add("noimg");   // 本体が読めなければ 色の箱＋名前
+    f1.src = m.sprites[0]; f2.src = m.sprites[1];
+    startBossAnim();
+    const bi = $("boss-in"); bi.classList.remove("go"); void bi.offsetWidth; bi.classList.add("go");
+    beep([[196,.12,"sawtooth"],[185,.12,"sawtooth"],[175,.12,"sawtooth"],[165,.35,"sawtooth"]]);
+  }
+  BGM.play(m.boss ? "boss" : "battle");
+  run.dice = 0; run.bonus = {}; run.busy = true;
+  $("choices").innerHTML = ""; $("sentence").innerHTML = ""; $("hint").textContent = ""; $("feedback").innerHTML = "";
+  $("qtype").textContent = ""; $("qunit").textContent = "";
+  renderBonuses(); renderTop(); renderHP();
+  if(Math.random() < DICE_CHANCE){       // ときどき うんめいのダイスが あらわれる
+    await wait(m.boss ? 1500 : 300);     // ボス登場の文字のあとに
+    await rollDiceForFight();
+  }else if(m.boss){
+    await wait(1200);
+  }
+  askNext();
+}
+
+/* ボスの2コマを交互に（ゆっくり、ときどき咆哮） */
+let bossTimer = null;
+function startBossAnim(){
+  const b = $("boss"); let t = 0;
+  bossTimer = setInterval(() => { t++; b.classList.toggle("f2", t % 4 === 3); }, 450);
+}
+/* ダメージで 赤く 2回 点滅 */
+function blinkRed(){
+  const b = $("boss");
+  [0,1,2,3].forEach(k => setTimeout(() => b.classList.toggle("red", k % 2 === 0), k * 120));
+}
+function stopBossAnim(){ if(bossTimer){ clearInterval(bossTimer); bossTimer = null; } $("boss").classList.remove("f2"); }
+
+function renderTop(){
+  $("combo").textContent = run.combo;
+  $("run-coins").textContent = run.coins;
+}
+function renderHP(){
+  const m = run.monster;
+  $("hpfill").style.width = (100 * run.mhp / m.hp) + "%";
+  $("hpnum").textContent = `HP ${run.mhp} / ${m.hp}`;
+}
+function heartSVG(){
+  return `<svg class="heart" viewBox="0 0 9 8" shape-rendering="crispEdges">
+    <path fill="#1b1b1b" d="M1 0h3v1h1V0h3v1h1v3H8v1H7v1H6v1H5v1H4V7H3V6H2V5H1V4H0V1h1z"/>
+    <path fill="#e2403a" d="M1 1h2v1h1v1h1V2h1V1h2v3H7v1H6v1H5v1H4V6H3V5H2V4H1z"/>
+    <path fill="#ff9a8f" d="M2 1h1v1H2z"/></svg>`;
+}
+function renderHearts(lostFrom, lostTo){
+  // lostFrom 〜 lostTo-1 番目のハートを ポンとへらす
+  const box = $("hearts");
+  box.innerHTML = '<span class="label">ハート</span>';
+  for(let i=0;i<MAX_HEARTS;i++){
+    const w = document.createElement("span");
+    w.innerHTML = heartSVG();
+    const h = w.firstChild;
+    if(i >= run.hearts) h.classList.add("lost");
+    if(lostFrom !== undefined && i >= lostFrom && i < lostTo) h.classList.add("pop");
+    box.appendChild(h);
+  }
+}
+
+function askNext(){
+  const q = nextQuestion();
+  run.q = q; run.busy = false;
+  $("feedback").innerHTML = "";
+  $("qunit").textContent = q.unit;
+  const sen = $("sentence");
+  if(q.type === "fill"){
+    $("qtype").textContent = "あなうめ";
+    sen.classList.remove("jp");
+    sen.innerHTML = "<span>" + esc(q.sentence).replace("___", '<span class="blank" id="blank">&nbsp;</span>') + "</span>";
+    $("hint").textContent = q.japanese;
+  }else{
+    $("qtype").textContent = "たんご";
+    sen.classList.toggle("jp", q.dir === "je");
+    sen.innerHTML = "<span>" + esc(q.sentence) + "</span>";
+    $("hint").textContent = q.japanese;
+  }
+  const box = $("choices");
+  box.innerHTML = "";
+  shuffle(q.choices).forEach(c => {
+    const b = document.createElement("button");
+    b.className = "choice" + (q.type === "word" && q.dir === "ej" ? " jp" : "");
+    b.textContent = c;
+    b.onclick = () => answer(b, c);
+    box.appendChild(b);
+  });
+}
+
+function currentAtk(){
+  return weaponAtk(save.equipped) + Math.floor(run.combo / 5) + (run.bonus.atk1 ? 1 : 0); // ぶき＋レベル＋5コンボごとに+1＋ダイス
+}
+
+async function answer(btn, choice){
+  if(run.busy) return;
+  run.busy = true;
+  const q = run.q, ok = choice === q.answer;
+  const buttons = [...document.querySelectorAll(".choice")];
+  buttons.forEach(b => { b.disabled = true; if(b.textContent === q.answer) b.classList.add("ok"); });
+  const blank = $("blank");
+  if(blank){ blank.textContent = q.answer; blank.classList.add(ok ? "ok" : "ng"); if(!ok) blank.classList.replace("ng","ok"); }
+
+  save.solved++;
+  if(ok) save.correct++;
+  writeSave();
+
+  if(ok){
+    run.combo++;
+    run.fightMaxCombo = Math.max(run.fightMaxCombo, run.combo);
+    const atk = currentAtk();
+    $("feedback").innerHTML = `<span class="ok">せいかい！ ${atk} ダメージ！</span>`;
+    SFX.ok();
+    await attack(atk);
+    renderTop();
+    if(run.mhp <= 0){ await wait(400); return winFight(); }
+    await wait(700);
+    askNext();
+  }else{
+    btn.classList.add("ng");
+    run.combo = 0;
+    const loss = run.monster.heartLoss || 1;            // ボスは ハート-2
+    const before = run.hearts;
+    run.hearts = Math.max(0, run.hearts - loss);
+    renderTop();
+    SFX.ng();
+    const arena = $("arena");
+    arena.classList.remove("hurt"); void arena.offsetWidth; arena.classList.add("hurt");
+    renderHearts(run.hearts, before);
+    if(run.hearts <= 0){
+      $("feedback").innerHTML = `<span class="ng">ざんねん… こたえは「${esc(q.answer)}」</span>`;
+      await wait(1600);
+      return loseRun();
+    }
+    $("feedback").innerHTML = `<span class="ng">ざんねん… こたえは「${esc(q.answer)}」</span>`;
+    await wait(1500); // 正解を見せてから自動で次へ
+    askNext();
+  }
+}
+
+async function attack(atk){
+  const slash = $("slash"), arena = $("arena"), dmg = $("dmg");
+  slash.innerHTML = wImg(equippedWeapon());
+  slash.classList.remove("go"); void slash.offsetWidth; slash.classList.add("go");
+  await wait(220);
+  SFX.hit();
+  arena.classList.remove("hit"); void arena.offsetWidth; arena.classList.add("hit");
+  if(run.monster.boss) blinkRed();
+  dmg.textContent = "-" + atk;
+  dmg.classList.remove("go"); void dmg.offsetWidth; dmg.classList.add("go");
+  run.mhp = Math.max(0, run.mhp - atk);
+  renderHP();
+  await wait(350);
+}
+
+function fightReward(){
+  // 10〜30枚：のこりハート×2 ＋ この戦いの最大コンボ（10まで）
+  const r = 10 + run.hearts * 2 + Math.min(run.fightMaxCombo, 10);
+  return Math.max(10, Math.min(30, r));
+}
+
+function winFight(){
+  stopBossAnim();
+  if(run.monster.boss) return winBoss();
+  const base = fightReward();
+  const reward = run.bonus.coin2 ? base * 2 : base;    // ダイス1・6：コイン2ばい
+  run.coins += reward;
+  renderTop();
+  SFX.win();
+  {
+    modal("win", `
+      <h2>かった！</h2>
+      <p>${esc(run.monster.name)}を たおした！</p>
+      <div class="big-coin"><span class="coin"></span>+${reward}（こんかい ごうけい ${run.coins}まい）</div>
+      ${run.bonus.coin2 ? `<p>うんめいのダイスで コイン 2ばい！（${base}→${reward}）</p>` : ""}
+      <p>のこりハート ${run.hearts}　つぎは ${MONSTERS[run.stage+1].boss ? `<b style="color:#d4143c">ボス</b>` : ""}「${esc(MONSTERS[run.stage+1].name)}」</p>
+      ${MONSTERS[run.stage+1].boss ? `<p>ボスは まちがえると ハートが 2つ へるよ！</p>` : ""}
+      <div class="row">
+        <button class="px-btn" data-act="next">つぎのモンスターへ ▶</button>
+        <button class="px-btn gray" data-act="bank">ホームへ（コインをもちかえる）</button>
+      </div>`);
+  }
+}
+
+/* ボスに勝ったら：その回のコインは全部持ち帰り、ごほうびは無料券1まい（ダイス1・6なら2まい）。コインは出さない */
+function winBoss(){
+  bankCoins(run.coins);
+  const tix = run.bonus.coin2 ? 2 : 1;                 // ダイス1・6：むりょうけん 2まい
+  save.tickets = (save.tickets|0) + tix;
+  writeSave();
+  SFX.win();
+  modal("win", `
+    <h2>ボスを たおした！</h2>
+    <p>${esc(run.monster.name)}を たおした！ ぜんぶ クリア！</p>
+    <div class="big-coin"><span class="ticket-ico"></span>ガチャ むりょうけん ×${tix} ゲット！</div>
+    ${tix > 1 ? `<p>うんめいのダイスで ごほうびが 2ばい！</p>` : ""}
+    <p>こんかいの コイン ${run.coins}まいも ぜんぶ もちかえったよ！</p>
+    <div class="row"><button class="px-btn" data-act="home">ホームへ</button></div>`);
+}
+
+function loseRun(){
+  stopBossAnim();
+  const keep = Math.floor(run.coins / 2);
+  bankCoins(keep);
+  SFX.lose();
+  modal("lose", `
+    <h2>まけちゃった…</h2>
+    <p>ハートが なくなった。</p>
+    <div class="big-coin"><span class="coin"></span>${run.coins}まいの はんぶん → ${keep}まい もちかえり</div>
+    <div class="row"><button class="px-btn" data-act="home">ホームへ</button></div>`);
+}
+
+function bankCoins(n){ save.coins += n; writeSave(); }
+
+function modal(kind, html){
+  const box = $("modal-box");
+  box.className = "px-box " + kind;
+  box.innerHTML = html;
+  $("modal").classList.add("active");
+  box.querySelectorAll("[data-act]").forEach(b => b.onclick = () => {
+    SFX.tap();
+    $("modal").classList.remove("active");
+    const act = b.dataset.act;
+    if(act === "next"){ run.stage++; startFight(); }
+    else if(act === "bank"){ bankCoins(run.coins); stopBossAnim(); renderHome(); }
+    else renderHome();
+  });
+}
+
+/* にげる：コインははんぶん（まけと同じあつかい）*/
+$("btn-quit").onclick = () => {
+  if(run.busy) return;
+  if($("modal").classList.contains("active")) return;
+  SFX.tap();
+  const keep = Math.floor(run.coins / 2);
+  modal("lose", `
+    <h2>にげる？</h2>
+    <p>にげると こんかいの コインは はんぶん（${keep}まい）に なるよ。</p>
+    <div class="row">
+      <button class="px-btn gray" data-act="stay">たたかう</button>
+      <button class="px-btn blue" data-act="flee">にげる</button>
+    </div>`);
+  $("modal-box").querySelector('[data-act="stay"]').onclick = () => { SFX.tap(); $("modal").classList.remove("active"); };
+  $("modal-box").querySelector('[data-act="flee"]').onclick = () => { SFX.tap(); $("modal").classList.remove("active"); bankCoins(keep); stopBossAnim(); renderHome(); };
+};
+
+/* 画像の先読み */
+[...MONSTERS, ...WEAPONS].forEach(m => { const i = new Image(); i.src = m.img; });
+MONSTERS.filter(m => m.sprites).flatMap(m => m.sprites).concat(["assets/fx-levelup.png"]).forEach(src => { const i = new Image(); i.src = src; });
+
+renderHome();
+})();
+</script>
+</body>
+</html>
