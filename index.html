@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="color-scheme" content="only light">
 <title>えいごクエスト</title>
 <style>
   :root{
@@ -13,13 +14,15 @@
     --px:4px;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  html,body{width:100%;height:100%;overflow:hidden;background:#111;color:var(--ink);
+  :root{color-scheme:only light;}
+  html,body{width:100%;height:100%;height:100dvh;overflow:hidden;background:#111;color:var(--ink);
     font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;
     -webkit-user-select:none;user-select:none;touch-action:manipulation;}
   button{font:inherit;color:inherit;border:none;background:none;cursor:pointer;}
   ruby rt{font-size:.5em;}
 
-  .screen{position:fixed;inset:0;display:none;}
+  /* iPhone はツールバーが出ていても 大きい方の高さで fixed を作ることがあるので、見えている高さ(dvh)に合わせる */
+  .screen{position:fixed;left:0;right:0;top:0;height:100%;height:100dvh;display:none;}
   .screen.active{display:flex;}
 
   /* ドット絵ふうの枠 */
@@ -308,7 +311,7 @@
   .hint{text-align:center;font-weight:700;font-size:min(2vw,3dvh);color:#4a3b28;background:#fff8e0;border:3px solid #c9b88f;padding:.4em .6em;}
   .choices{display:grid;grid-template-columns:1fr 1fr;gap:1.4dvh 1.2vw;}
   .choice{font-family:"Arial Rounded MT Bold","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:min(2.8vw,4dvh);
-    min-height:max(64px,11dvh);background:#fff;border:var(--px) solid var(--ink);
+    min-height:max(44px,10dvh);background:#fff;border:var(--px) solid var(--ink);
     box-shadow:inset -6px -6px 0 #cfc7b0, inset 6px 6px 0 #fff;padding:.2em .4em;}
   .choice.jp{font-family:inherit;font-weight:900;}
   .choice:active{transform:translateY(3px);}
@@ -316,7 +319,7 @@
   .choice.ng{background:#ffc9c4;box-shadow:inset -6px -6px 0 #e78a83, inset 6px 6px 0 #fff0ee;}
   .choice:disabled{cursor:default;}
   .choice:disabled:not(.ok):not(.ng){opacity:.55;}
-  .feedback{min-height:56px;display:flex;align-items:center;justify-content:center;gap:1vw;font-weight:900;font-size:min(2.4vw,3.4dvh);}
+  .feedback{min-height:max(34px,7dvh);display:flex;align-items:center;justify-content:center;gap:1vw;font-weight:900;font-size:min(2.4vw,3.4dvh);}
   .feedback .ok{color:var(--ok);} .feedback .ng{color:var(--ng);}
 
   /* ===== モーダル ===== */
@@ -330,6 +333,19 @@
   .modal .px-btn{font-size:min(2.4vw,3.4dvh);}
   .win h2{color:var(--grass-d);} .lose h2{color:var(--red);}
 
+  /* 高さがせまい画面（スマホ横向き＋ブラウザのバー）では つめて表示 */
+  @media (max-height:430px){
+    .topbar{height:40px;min-height:40px;}
+    .battle-main{gap:1vw;}
+    #battle{gap:1dvh;padding:1dvh 1vw;}
+    .qmeta{display:none;}
+    .qpanel{padding:1.2dvh 1.2vw;gap:1.2dvh;}
+    .sentence{font-size:min(3.4vw,7dvh);}
+    .hint{padding:.15em .5em;font-size:min(1.8vw,4.6dvh);}
+    .choices{gap:1.2dvh 1vw;}
+    .choice{min-height:40px;font-size:min(2.6vw,6.4dvh);}
+    .feedback{min-height:28px;font-size:min(2.2vw,5.2dvh);}
+  }
   #rotate{position:fixed;inset:0;background:#2a1d12;color:#fff;display:none;align-items:center;justify-content:center;
     text-align:center;font-weight:900;font-size:6vw;z-index:50;padding:5vw;line-height:1.6;}
   @media (orientation:portrait) and (max-width:900px){ #rotate{display:flex;} }
